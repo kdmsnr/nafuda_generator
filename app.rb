@@ -11,8 +11,8 @@ get '/' do
 end
 
 def max_pt_per_px(width_px, string)
-  length = string.split(/\s/).map{|i| i.split(//u).size }.max
-  pt = (width_px / length).to_i
+  str_length = string.split(//u).size
+  pt = (width_px / str_length).to_i
   pt *= 2 if string =~ /\A[\(\)@\w\s]+\z/
   return pt
 end
@@ -39,13 +39,19 @@ get "/:user" do
       json = open("http://api.twitter.com/1/users/show/#{user_name}.json")
       user = JSON.parse(json.read)
       user_real_name = user["name"]
-      draw.annotate(canvas, 0, 0, 10, 3, user_real_name.gsub(/\s/, "\n")) {
-        self.pointsize = max_pt_per_px(width - 20, user_real_name)
-        self.gravity = NorthWestGravity
-      }
+
+      start_margin = 3
+      user_real_name.split(/\s/).each do |str|
+        pt = max_pt_per_px(width - 20, str)
+        draw.annotate(canvas, 0, 0, 10, start_margin, str) {
+          self.pointsize = pt
+          self.gravity = NorthWestGravity
+        }
+        start_margin += (pt - 5)
+      end
 
       # Twitter id
-      draw.annotate(canvas, 0, 0, 10, 10, "@#{user_name}") {
+      draw.annotate(canvas, 0, 0, 10, 5, "@#{user_name}") {
         self.pointsize = max_pt_per_px(width - 20 - 72, "@#{user_name}")
         self.gravity = SouthWestGravity
       }

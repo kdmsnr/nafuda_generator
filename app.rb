@@ -16,7 +16,7 @@ end
 def max_pt_per_px(width_px, string)
   length = string.split(/\s/).map{|i| i.split(//u).size }.max
   pt = (width_px / length).to_i
-  pt *= 2 if string =~ /\A[@\w\s]+\z/
+  pt *= 2 if string =~ /\A[\(\)@\w\s]+\z/
   return pt
 end
 
@@ -24,37 +24,39 @@ get "/:user" do
   begin
     user_name = File.basename(params[:user])
 
-    width = 8.9 / 2.54 * 72
-    height = 9.8 / 2.54 * 72
+    unless File.exist?("/tmp/#{user_name}.jpg")
+      width = 8.9 / 2.54 * 72
+      height = 9.8 / 2.54 * 72
 
-    canvas = ImageList.new
-    canvas.new_image(width, height)
-    canvas.border!(2, 2, "black")
+      canvas = ImageList.new
+      canvas.new_image(width, height)
+      canvas.border!(2, 2, "black")
 
-    draw = Draw.new do
-      self.fill = 'black'
-      self.stroke = 'transparent'
-      self.font = File.expand_path('./fonts/ipag.ttf')
+      draw = Draw.new do
+        self.fill = 'black'
+        self.stroke = 'transparent'
+        self.font = File.expand_path('./fonts/ipag.ttf')
+      end
+
+      # Name
+      doc = Hpricot(open("http://twitter.com/#{user_name}"))
+      user_real_name = doc.search(".entry-author").search(".fn").innerHTML.to_s
+      draw.annotate(canvas, 0, 0, 10, 3, user_real_name.gsub(/\s/, "\n")) {
+        self.pointsize = max_pt_per_px(width - 20, user_real_name)
+        self.gravity = NorthWestGravity
+      }
+
+      # Twitter id
+      draw.annotate(canvas, 0, 0, 10, 10, "@#{user_name}") {
+        self.pointsize = max_pt_per_px(width - 20 - 72, "@#{user_name}")
+        self.gravity = SouthWestGravity
+      }
+
+      # Twitter Image
+      icon = ImageList.new("http://img.tweetimag.es/i/#{user_name}_b")
+      canvas.composite!(icon, SouthEastGravity, 10, 10, OverCompositeOp)
+      canvas.write("/tmp/#{user_name}.jpg")
     end
-
-    # Name
-    doc = Hpricot(open("http://twitter.com/#{user_name}"))
-    user_real_name = doc.search(".entry-author").search(".fn").innerHTML.to_s
-    draw.annotate(canvas, 0, 0, 10, 3, user_real_name.gsub(/\s/, "\n")) {
-      self.pointsize = max_pt_per_px(width - 20, user_real_name)
-      self.gravity = NorthWestGravity
-    }
-
-    # Twitter id
-    draw.annotate(canvas, 0, 0, 10, 10, "@#{user_name}") {
-      self.pointsize = max_pt_per_px(width - 20 - 72, "@#{user_name}")
-      self.gravity = SouthWestGravity
-    }
-
-    # Twitter Image
-    icon = ImageList.new("http://img.tweetimag.es/i/#{user_name}_b")
-    canvas.composite!(icon, SouthEastGravity, 10, 10, OverCompositeOp)
-    canvas.write("/tmp/#{user_name}.jpg")
 
     # read
     File.open("/tmp/#{user_name}.jpg") do |f|

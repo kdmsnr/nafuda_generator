@@ -2,11 +2,8 @@
 require 'rubygems'
 require 'sinatra'
 require 'RMagick'
+require 'open-uri'
 require 'json'
-require 'open-uri'
-require 'RMagick'
-require 'hpricot'
-require 'open-uri'
 include Magick
 
 get '/' do

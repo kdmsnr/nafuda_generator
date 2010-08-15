@@ -2,7 +2,7 @@
 require 'rubygems'
 require 'sinatra'
 require 'RMagick'
-require 'hpricot'
+require 'json'
 require 'open-uri'
 require 'RMagick'
 require 'hpricot'
@@ -39,8 +39,9 @@ get "/:user" do
       end
 
       # Name
-      doc = Hpricot(open("http://twitter.com/#{user_name}"))
-      user_real_name = doc.search(".entry-author").search(".fn").innerHTML.to_s
+      json = open("http://api.twitter.com/1/users/show/#{user_name}.json")
+      user = JSON.parse(json.read)
+      user_real_name = user["name"]
       draw.annotate(canvas, 0, 0, 10, 3, user_real_name.gsub(/\s/, "\n")) {
         self.pointsize = max_pt_per_px(width - 20, user_real_name)
         self.gravity = NorthWestGravity

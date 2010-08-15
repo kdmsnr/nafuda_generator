@@ -13,15 +13,19 @@ get '/' do
   erb :index
 end
 
+def max_pt_per_px(width_px, string)
+  length = string.split(/\s/).map{|i| i.split(//u).size }.max
+  pt = (width_px / length).to_i
+  pt *= 2 if string =~ /\A[@\w\s]+\z/
+  return pt
+end
+
 get "/:user" do
   begin
     user_name = File.basename(params[:user])
 
     width = 8.9 / 2.54 * 72
     height = 9.8 / 2.54 * 72
-
-    name_pt = 80
-    twitter_pt = 26
 
     canvas = ImageList.new
     canvas.new_image(width, height)
@@ -30,26 +34,20 @@ get "/:user" do
     draw = Draw.new do
       self.fill = 'black'
       self.stroke = 'transparent'
-      self.font = File.expand_path('./fonts/ipagp.ttf')
+      self.font = File.expand_path('./fonts/ipag.ttf')
     end
 
     # Name
     doc = Hpricot(open("http://twitter.com/#{user_name}"))
-    user = doc.search(".entry-author").search(".fn").innerHTML.to_s
-
-    # font size for ascii ... grrrrr ugly
-    if user =~ /\w+/
-      name_pt /= 2
-    end
-
-    draw.annotate(canvas, 0, 0, 10, 10, user.gsub(/\s/, "\n")) {
-      self.pointsize = name_pt
+    user_real_name = doc.search(".entry-author").search(".fn").innerHTML.to_s
+    draw.annotate(canvas, 0, 0, 10, 3, user_real_name.gsub(/\s/, "\n")) {
+      self.pointsize = max_pt_per_px(width - 20, user_real_name)
       self.gravity = NorthWestGravity
     }
 
     # Twitter id
     draw.annotate(canvas, 0, 0, 10, 10, "@#{user_name}") {
-      self.pointsize = twitter_pt
+      self.pointsize = max_pt_per_px(width - 20 - 72, "@#{user_name}")
       self.gravity = SouthWestGravity
     }
 
